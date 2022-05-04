@@ -54,7 +54,7 @@ static void init_output_pwm() {
             for(int n = 0; n < pwm_configurations.size(); n++)
             {
                 if(pwm_configurations[n].TCC == tcc_hardware[tcc_idx]) {
-                    config_tcc.compare.match[pwm_configurations[n].channel] = (PWM_OUT_PERIOD / 2);
+                    config_tcc.compare.match[pwm_configurations[n].channel] = 0;
                     config_tcc.pins.enable_wave_out_pin[pwm_configurations[n].output] = true;
                     config_tcc.pins.wave_out_pin[pwm_configurations[n].output] = pwm_configurations[n].pin;
                     config_tcc.pins.wave_out_pin_mux[pwm_configurations[n].output] = pwm_configurations[n].pin_mux;
@@ -77,6 +77,7 @@ static void init_output_pwm() {
 
 void hardware_set_pwm_out(unsigned int n, uint16_t val)
 {
+    val = std::min(val, (uint16_t)(PWM_OUT_MAX-1));
     tcc_set_compare_value(pwm_configurations[n].module,
                           static_cast<const tcc_match_capture_channel>(pwm_configurations[n].channel), val);
 }

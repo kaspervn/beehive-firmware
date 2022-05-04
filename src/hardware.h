@@ -3,8 +3,9 @@
 
 #include <cstdint>
 
-#define PWM_OUT_PERIOD (0xFFFF)
-#define PWM_OUT_MAX PWM_OUT_PERIOD
+#define PWM_OUT_PERIOD (0x0FFF)             // The number of clock cycles of the PWM frequency
+#define PWM_OUT_LIMIT (PWM_OUT_PERIOD/3)    // The maximum duty cycle. Can be somewhere between 0 and PWM_OUT_PERIOD
+#define PWM_OUT_MAX PWM_OUT_LIMIT           // The max value you can give to hardware_set_pwm_out()
 
 //Call this in the setup of your main.cpp
 void hardware_init();
