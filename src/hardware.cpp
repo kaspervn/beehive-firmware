@@ -26,10 +26,17 @@ typedef struct {
 //  channel 2: output WO2 and WO6  (only available on TCC0)
 //  channel 4: output WO3 and WO7  (only available on TCC0)
 static std::vector<pwm_config_t> pwm_configurations = {
-        {.TCC = TCC0, .channel = 0, .output = 0, .pin = PIN_PA04E_TCC0_WO0, .pin_mux = PINMUX_PA04E_TCC0_WO0},
-        {.TCC = TCC0, .channel = 3, .output = 7, .pin = PIN_PA17F_TCC0_WO7, .pin_mux = PINMUX_PA17F_TCC0_WO7},
-        {.TCC = TCC0, .channel = 1, .output = 5, .pin = PIN_PA23F_TCC0_WO5, .pin_mux = PINMUX_PA23F_TCC0_WO5},
+        {.TCC = TCC0, .channel = 0, .output = 0, .pin = PIN_PA04E_TCC0_WO0, .pin_mux = PINMUX_PA04E_TCC0_WO0}, // Coil A
+        {.TCC = TCC0, .channel = 1, .output = 5, .pin = PIN_PA23F_TCC0_WO5, .pin_mux = PINMUX_PA23F_TCC0_WO5}, // Coil B
+        {.TCC = TCC0, .channel = 3, .output = 1, .pin = PIN_PA09E_TCC0_WO1, .pin_mux = PINMUX_PA09E_TCC0_WO1}, // Coil C
         };
+
+
+#define GPIO_COIL_A_PHASE PIN_PA01
+#define GPIO_COIL_B_PHASE PIN_PA27
+#define GPIO_COIL_C_PHASE PIN_PA08
+#define GPIO_COIL_PHASE_PINS {GPIO_COIL_A_PHASE, GPIO_COIL_B_PHASE, GPIO_COIL_C_PHASE}
+static uint8_t gpio_coil_phase_pins[3] = {1, 27, 8};
 
 static void init_output_pwm() {
 
@@ -75,14 +82,29 @@ static void init_output_pwm() {
     }
 }
 
-void hardware_set_pwm_out(unsigned int n, uint16_t val)
+void hardware_set_coil_power(unsigned int n, int32_t val)
 {
-    val = std::min(val, (uint16_t)(PWM_OUT_MAX-1));
+    //gpio_pin_set_output_level(GPIO_COIL_PHASE_PINS[n], sign > 0);
+    if(val > 0) {
+        PORT->Group[0].OUTCLR.reg = (1ul << gpio_coil_phase_pins[n]);
+    } else {
+        PORT->Group[0].OUTSET.reg = (1ul << gpio_coil_phase_pins[n]);
+    }
+
+    uint32_t val_abs = abs(val);
+    uint32_t real_pwm = std::min(val_abs, (uint32_t)(PWM_OUT_MAX-1));
     tcc_set_compare_value(pwm_configurations[n].module,
-                          static_cast<const tcc_match_capture_channel>(pwm_configurations[n].channel), val);
+                          static_cast<const tcc_match_capture_channel>(pwm_configurations[n].channel), real_pwm);
+}
+
+static void init_coil_phase_pins()
+{
+    for(int n = 0; n < 3; n++)
+        PORT->Group[0].DIRSET.reg = (1ul << gpio_coil_phase_pins[n]);
 }
 
 void hardware_init()
 {
+    init_coil_phase_pins();
     init_output_pwm();
 }

@@ -20,8 +20,7 @@ static int32_t pwm_sin(int32_t t, const float freq, const float ampl, const floa
     return (int32_t)(
             sinf(freq * t / 1000.0f * (float)TWO_PI + phase_shift)
             * ampl
-            * (float)(PWM_OUT_MAX/2))
-            + PWM_OUT_MAX/2;
+            * (float)(PWM_OUT_MAX));
 }
 
 
@@ -45,9 +44,9 @@ void loop()
     int32_t pwm1 = pwm_sin(t_now, g_test_coil_wave_freq, g_test_coil_wave_amplitude, g_test_coil_wave_phase_shift_1);
     int32_t pwm2 = pwm_sin(t_now, g_test_coil_wave_freq, g_test_coil_wave_amplitude, g_test_coil_wave_phase_shift_2);
 
-    hardware_set_pwm_out(0, pwm0);
-    hardware_set_pwm_out(1, pwm1);
-    hardware_set_pwm_out(2, pwm2);
+    hardware_set_coil_power(0, pwm0);
+    hardware_set_coil_power(1, pwm1);
+    hardware_set_coil_power(2, pwm2);
 
     //Prints the coil pwm outputs in percentage of max effort, and the loop duration time in microseconds
     Serial.printf("%d, %d, %d, %lu\r\n", 100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, (uint32_t)last_loop_duration_us);
