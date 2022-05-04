@@ -9,8 +9,6 @@
 
 //microcontroller: SAMD21E18A-F
 
-static const uint16_t PWM_OUT_PERIOD = 0xFFFF;
-
 static tcc_module tcc_modules[3];
 static Tcc* tcc_hardware[3] = {TCC0, TCC1, TCC2};
 
