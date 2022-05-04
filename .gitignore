@@ -55,4 +55,5 @@ CMakeLists*
 #No git folder
 nogit
 
-
+# Visual studio code
+.vscode
