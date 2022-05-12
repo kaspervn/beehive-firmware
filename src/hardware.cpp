@@ -214,30 +214,28 @@ void hardware_setup()
 
 void hardware_loop()
 {
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) {  }
+    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
     PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-//    uint32_t period1 = TCC1->CC[1].reg;
-//    uint32_t pulse_width1 = TCC1->CC[0].reg;
+    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
     uint32_t period1 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
     uint32_t pulse_width1 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    system_interrupt_disable_global();
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
-    inin_pwm_in_tcc();
-    system_interrupt_enable_global();
 
-    delay(500);
+    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+
     while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
     PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-//    uint32_t period2 = TCC1->CC[1].reg;
-//    uint32_t pulse_width2 = TCC1->CC[0].reg;
+    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
     uint32_t period2 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
     uint32_t pulse_width2 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    system_interrupt_disable_global();
     EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc2.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
-    inin_pwm_in_tcc();
-    system_interrupt_enable_global();
 
     Serial.printf("period=%ld , pulse width =%ld, ", period1 , pulse_width1);
     Serial.printf("period=%ld , pulse width =%ld \r\n", period2 , pulse_width2);
