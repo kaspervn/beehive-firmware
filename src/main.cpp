@@ -27,6 +27,7 @@ static int32_t pwm_sin(int32_t t, const float freq, const float ampl, const floa
 // ========== Arduino stuff
 void setup() {
     Serial.begin(9600);
+    Serial.write("Start\r\n");
     hardware_setup();
 
 }

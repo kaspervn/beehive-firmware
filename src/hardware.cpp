@@ -140,15 +140,15 @@ static void init_pwm_in()
 
     struct extint_chan_conf config_extint_chan;
     extint_chan_get_config_defaults(&config_extint_chan);
-    config_extint_chan.gpio_pin           = PIN_PA03A_EIC_EXTINT3;
-    config_extint_chan.gpio_pin_mux       = MUX_PA03A_EIC_EXTINT3;
+    config_extint_chan.gpio_pin           = PIN_PA31A_EIC_EXTINT11;
+    config_extint_chan.gpio_pin_mux       = MUX_PA31A_EIC_EXTINT11;
     config_extint_chan.gpio_pin_pull      = EXTINT_PULL_NONE;
     config_extint_chan.detection_criteria = EXTINT_DETECT_HIGH;
-    extint_chan_set_config(3, &config_extint_chan);
+    extint_chan_set_config(11, &config_extint_chan);
     // ##########
-    config_extint_chan.gpio_pin           = PIN_PA05A_EIC_EXTINT5;
-    config_extint_chan.gpio_pin_mux       = MUX_PA05A_EIC_EXTINT5;
-    extint_chan_set_config(5, &config_extint_chan);
+    config_extint_chan.gpio_pin           = PIN_PA16A_EIC_EXTINT0;
+    config_extint_chan.gpio_pin_mux       = MUX_PA16A_EIC_EXTINT0;
+    extint_chan_set_config(0, &config_extint_chan);
     // ##########
     struct extint_events config_events = {0};
     config_events.generate_event_on_detect[3] = true;
@@ -158,11 +158,11 @@ static void init_pwm_in()
     struct events_config config;
     events_get_config_defaults(&config);
     config.clock_source = GCLK_GENERATOR_0;
-    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_3;
+    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_11;
     config.path         = EVENTS_PATH_ASYNCHRONOUS;
     config.edge_detect  = EVENTS_EDGE_DETECT_BOTH;
     events_allocate(&pwm_in_event_rsrc1, &config);
-    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_5;
+    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_0;
     events_allocate(&pwm_in_event_rsrc2, &config);
 
     events_attach_user(&pwm_in_event_rsrc1, EVSYS_ID_USER_TCC1_EV_1);
@@ -177,8 +177,8 @@ void hardware_setup()
     system_interrupt_enable_global();
 
 
-    init_coil_phase_pins();
-    init_output_pwm();
+    // init_coil_phase_pins();
+    // init_output_pwm();
     init_pwm_in();
 
 //    PORT->Group[0].CTRL.reg = 0xFFFF; //continous sampling on all pins
