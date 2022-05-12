@@ -27,8 +27,8 @@ typedef struct {
 //  channel 4: output WO3 and WO7  (only available on TCC0)
 static std::vector<pwm_config_t> pwm_configurations = {
         {.TCC = TCC0, .channel = 0, .output = 0, .pin = PIN_PA04E_TCC0_WO0, .pin_mux = PINMUX_PA04E_TCC0_WO0}, // Coil A
-        {.TCC = TCC0, .channel = 1, .output = 5, .pin = PIN_PA23F_TCC0_WO5, .pin_mux = PINMUX_PA23F_TCC0_WO5}, // Coil B
-        {.TCC = TCC0, .channel = 3, .output = 1, .pin = PIN_PA09E_TCC0_WO1, .pin_mux = PINMUX_PA09E_TCC0_WO1}, // Coil C
+        {.TCC = TCC0, .channel = 3, .output = 3, .pin = PIN_PA19F_TCC0_WO3, .pin_mux = PINMUX_PA19F_TCC0_WO3}, // Coil B
+        {.TCC = TCC0, .channel = 1, .output = 1, .pin = PIN_PA09E_TCC0_WO1, .pin_mux = PINMUX_PA09E_TCC0_WO1}, // Coil C
         };
 
 
