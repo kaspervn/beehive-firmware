@@ -15,9 +15,31 @@
 
 //microcontroller: SAMD21E18A-F
 
-struct events_resource pwm_in_event_rsrc1, pwm_in_event_rsrc2, pwm_in_event_rsrc3;
-#define PWM_IN_TCC_NR 1
-#define PWM_IN_TCC TCC1
+struct events_resource pwm_in_event_1, pwm_in_event_2, pwm_in_event_3;
+
+//Coil A hall sensor in
+#define PWM_IN_1_2_TCC_NR 1
+#define PWM_IN_1_2_TCC TCC1
+#define PWM_IN_1_2_EVSYS_USR EVSYS_ID_USER_TCC1_EV_1
+#define PWM_IN_1_EXTINT_PIN PIN_PA31A_EIC_EXTINT11
+#define PWM_IN_1_EXTINT_MUX MUX_PA31A_EIC_EXTINT11
+#define PWM_IN_1_EXTINT_NR 11
+#define PWM_IN_1_EVSYS_GEN EVSYS_ID_GEN_EIC_EXTINT_11
+
+//Coil B hall sensor in
+#define PWM_IN_2_EXTINT_PIN PIN_PA16A_EIC_EXTINT0
+#define PWM_IN_2_EXTINT_MUX MUX_PA16A_EIC_EXTINT0
+#define PWM_IN_2_EXTINT_NR 0
+#define PWM_IN_2_EVSYS_GEN EVSYS_ID_GEN_EIC_EXTINT_0
+
+//Coil C hall sensor in
+#define PWM_IN_3_TCC_NR 2
+#define PWM_IN_3_TCC TCC2
+#define PWM_IN_3_EVSYS_USR EVSYS_ID_USER_TCC2_EV_1
+#define PWM_IN_3_EXTINT_PIN PIN_PA07A_EIC_EXTINT7
+#define PWM_IN_3_EXTINT_MUX MUX_PA07A_EIC_EXTINT7
+#define PWM_IN_3_EXTINT_NR 7
+#define PWM_IN_3_EVSYS_GEN EVSYS_ID_GEN_EIC_EXTINT_7
 
 static tcc_module tcc_modules[3];
 static Tcc* tcc_hardware[3] = {TCC0, TCC1, TCC2};
@@ -45,7 +67,6 @@ static std::vector<pwm_config_t> pwm_configurations = {
 #define GPIO_COIL_A_PHASE PIN_PA01
 #define GPIO_COIL_B_PHASE PIN_PA27
 #define GPIO_COIL_C_PHASE PIN_PA08
-#define GPIO_COIL_PHASE_PINS {GPIO_COIL_A_PHASE, GPIO_COIL_B_PHASE, GPIO_COIL_C_PHASE}
 static uint8_t gpio_coil_phase_pins[3] = {1, 27, 8};
 
 static void init_output_pwm() {
@@ -113,66 +134,69 @@ static void init_coil_phase_pins()
         PORT->Group[0].DIRSET.reg = (1ul << gpio_coil_phase_pins[n]);
 }
 
-static void inin_pwm_in_tcc()
+static void init_pwm_in()
 {
     struct tcc_config config_tcc;
-    tcc_get_config_defaults(&config_tcc, PWM_IN_TCC);
+    tcc_get_config_defaults(&config_tcc, PWM_IN_1_2_TCC);
     config_tcc.counter.clock_source         = GCLK_GENERATOR_0;
     config_tcc.counter.clock_prescaler      = TCC_CLOCK_PRESCALER_DIV1;
     config_tcc.compare.channel_function[0]  = TCC_CHANNEL_FUNCTION_CAPTURE;
     config_tcc.compare.channel_function[1]  = TCC_CHANNEL_FUNCTION_CAPTURE;
     config_tcc.double_buffering_enabled     = false;
-    tcc_init(&tcc_modules[PWM_IN_TCC_NR], PWM_IN_TCC, &config_tcc);
+    tcc_init(&tcc_modules[PWM_IN_1_2_TCC_NR], PWM_IN_1_2_TCC, &config_tcc);
+    tcc_get_config_defaults(&config_tcc, PWM_IN_3_TCC);
+    config_tcc.counter.clock_source         = GCLK_GENERATOR_0;
+    config_tcc.counter.clock_prescaler      = TCC_CLOCK_PRESCALER_DIV1;
+    config_tcc.compare.channel_function[0]  = TCC_CHANNEL_FUNCTION_CAPTURE;
+    config_tcc.compare.channel_function[1]  = TCC_CHANNEL_FUNCTION_CAPTURE;
+    config_tcc.double_buffering_enabled     = false;
+    tcc_init(&tcc_modules[PWM_IN_3_TCC_NR], PWM_IN_3_TCC, &config_tcc);
 
     struct tcc_events events_tcc;
     events_tcc.input_config[0].modify_action      = false;
     events_tcc.input_config[1].modify_action      = true;
     events_tcc.on_input_event_perform_action[1]   = true;
     events_tcc.input_config[1].action             = TCC_EVENT_ACTION_PULSE_WIDTH_PERIOD_CAPTURE;
-    tcc_enable_events(&tcc_modules[PWM_IN_TCC_NR], &events_tcc);
-    tcc_enable(&tcc_modules[PWM_IN_TCC_NR]);
-
-}
-
-static void init_pwm_in()
-{
-    inin_pwm_in_tcc();
+    tcc_enable_events(&tcc_modules[PWM_IN_1_2_TCC_NR], &events_tcc);
+    tcc_enable(&tcc_modules[PWM_IN_1_2_TCC_NR]);
+    tcc_enable_events(&tcc_modules[PWM_IN_3_TCC_NR], &events_tcc);
+    tcc_enable(&tcc_modules[PWM_IN_3_TCC_NR]);
 
     struct extint_chan_conf config_extint_chan;
     extint_chan_get_config_defaults(&config_extint_chan);
-    config_extint_chan.gpio_pin           = PIN_PA31A_EIC_EXTINT11; //coil A
-    config_extint_chan.gpio_pin_mux       = MUX_PA31A_EIC_EXTINT11;
+    config_extint_chan.gpio_pin           = PWM_IN_1_EXTINT_PIN;
+    config_extint_chan.gpio_pin_mux       = PWM_IN_1_EXTINT_MUX;
     config_extint_chan.gpio_pin_pull      = EXTINT_PULL_NONE;
     config_extint_chan.detection_criteria = EXTINT_DETECT_HIGH;
-    extint_chan_set_config(11, &config_extint_chan);
-    config_extint_chan.gpio_pin           = PIN_PA16A_EIC_EXTINT0; //coil B
-    config_extint_chan.gpio_pin_mux       = MUX_PA16A_EIC_EXTINT0;
-    extint_chan_set_config(0, &config_extint_chan);
-    config_extint_chan.gpio_pin           = PIN_PA07A_EIC_EXTINT7; //coil C
-    config_extint_chan.gpio_pin_mux       = MUX_PA07A_EIC_EXTINT7;
-    extint_chan_set_config(7, &config_extint_chan);
+    extint_chan_set_config(PWM_IN_1_EXTINT_NR, &config_extint_chan);
+    config_extint_chan.gpio_pin           = PWM_IN_2_EXTINT_PIN;
+    config_extint_chan.gpio_pin_mux       = PWM_IN_2_EXTINT_MUX;
+    extint_chan_set_config(PWM_IN_2_EXTINT_NR, &config_extint_chan);
+    config_extint_chan.gpio_pin           = PWM_IN_3_EXTINT_PIN;
+    config_extint_chan.gpio_pin_mux       = PWM_IN_3_EXTINT_MUX;
+    extint_chan_set_config(PWM_IN_3_EXTINT_NR, &config_extint_chan);
 
     struct extint_events config_events = {0};
-    config_events.generate_event_on_detect[11] = true;
-    config_events.generate_event_on_detect[0] = true;
-    config_events.generate_event_on_detect[7] = true;
+    config_events.generate_event_on_detect[PWM_IN_1_EXTINT_NR] = true;
+    config_events.generate_event_on_detect[PWM_IN_2_EXTINT_NR] = true;
+    config_events.generate_event_on_detect[PWM_IN_3_EXTINT_NR] = true;
     extint_enable_events(&config_events);
 
     struct events_config config;
     events_get_config_defaults(&config);
     config.clock_source = GCLK_GENERATOR_0;
-    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_11;
+    config.generator    = PWM_IN_1_EVSYS_GEN;
     config.path         = EVENTS_PATH_ASYNCHRONOUS;
     config.edge_detect  = EVENTS_EDGE_DETECT_BOTH;
-    events_allocate(&pwm_in_event_rsrc1, &config);
-    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_0;
-    events_allocate(&pwm_in_event_rsrc2, &config);
-    config.generator    = EVSYS_ID_GEN_EIC_EXTINT_7;
-    events_allocate(&pwm_in_event_rsrc3, &config);
+    events_allocate(&pwm_in_event_1, &config);
+    config.generator    = PWM_IN_2_EVSYS_GEN;
+    events_allocate(&pwm_in_event_2, &config);
+    config.generator    = PWM_IN_3_EVSYS_GEN;
+    events_allocate(&pwm_in_event_3, &config);
 
-    events_attach_user(&pwm_in_event_rsrc1, EVSYS_ID_USER_TCC1_EV_1);
-    events_attach_user(&pwm_in_event_rsrc2, EVSYS_ID_USER_TCC1_EV_1);
-    events_attach_user(&pwm_in_event_rsrc3, EVSYS_ID_USER_TCC1_EV_1);
+    events_attach_user(&pwm_in_event_1, PWM_IN_1_2_EVSYS_USR);
+    events_attach_user(&pwm_in_event_2, PWM_IN_1_2_EVSYS_USR);
+    events_attach_user(&pwm_in_event_3, PWM_IN_3_EVSYS_USR);
 }
 
 void hardware_setup()
@@ -187,45 +211,41 @@ void hardware_setup()
 
 }
 
-void hardware_loop()
+hardware_state_t hardware_loop()
 {
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    uint32_t period1 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    uint32_t pulse_width1 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    hardware_state_t hardware_state;
 
+    //flush the buffer to remove an invalid value from the previous cycle
+    while(!(PWM_IN_1_2_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_1_2_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
+    tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    while(!(PWM_IN_1_2_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_1_2_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
+    hardware_state.coil_pwm_period[1] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    hardware_state.coil_pwm_pulse_width[1] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    uint32_t period2 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    uint32_t pulse_width2 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    //switch to channel 1
+    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
 
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc2.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    //flush the buffer to remove an invalid value from the previous cycle
+    while(!(PWM_IN_1_2_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_1_2_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
+    tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    while(!(PWM_IN_1_2_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_1_2_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
+    hardware_state.coil_pwm_period[0] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    hardware_state.coil_pwm_pulse_width[0] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
-    while(!(PWM_IN_TCC->INTFLAG.bit.MC1)) { }
-    PWM_IN_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
-    uint32_t period3 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
-    uint32_t pulse_width3 = tcc_get_capture_value(&tcc_modules[PWM_IN_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
+    //switch to channel 2 for the next round
+    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_2.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
 
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_rsrc3.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    while(!(PWM_IN_3_TCC->INTFLAG.bit.MC1)) { }
+    PWM_IN_3_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
+    hardware_state.coil_pwm_period[2] = tcc_get_capture_value(&tcc_modules[PWM_IN_3_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_1);
+    hardware_state.coil_pwm_pulse_width[2] = tcc_get_capture_value(&tcc_modules[PWM_IN_3_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
-    Serial.printf("\r\nperiod=%ld , pulse width =%ld, percentage= %d\r\n", period1 , pulse_width1, 10000*pulse_width1 / period1);
-    Serial.printf("period=%ld , pulse width =%ld, percentage= %d\r\n", period2 , pulse_width2, 10000*pulse_width2 / period2);
-    Serial.printf("period=%ld , pulse width =%ld, percentage= %d\r\n", period3 , pulse_width3, 10000*pulse_width3 / period3);
-
-    delay(100);
+    return hardware_state;
 }

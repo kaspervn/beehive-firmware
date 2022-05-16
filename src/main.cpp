@@ -32,16 +32,15 @@ void setup() {
 
 }
 
-void loop()
-{
-    //Used for loop performance calculation
-//    int64_t t_now_us = micros();
-//    int64_t last_loop_duration_us = t_now_us - g_loop_previous_loop_t;
-//    g_loop_previous_loop_t = t_now_us;
+void loop() {
+    // Used for loop performance calculation
+    int64_t t_now_us = micros();
+    int64_t last_loop_duration_us = t_now_us - g_loop_previous_loop_t;
+    g_loop_previous_loop_t = t_now_us;
 
-    hardware_loop();
+    hardware_state_t hardware_state = hardware_loop();
 
-    /*//Calculate the coil pwm output
+    //Calculate the coil pwm output
     int32_t t_now = millis();
 
     int32_t pwm0 = pwm_sin(t_now, g_test_coil_wave_freq, g_test_coil_wave_amplitude, 0.0f);
@@ -53,5 +52,5 @@ void loop()
     hardware_set_coil_power(2, pwm2);
 
     //Prints the coil pwm outputs in percentage of max effort, and the loop duration time in microseconds
-    Serial.printf("%d, %d, %d, %lu\r\n", 100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, (uint32_t)last_loop_duration_us);*/
+    Serial.printf("%d, %d, %d, %lu\r\n", 100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, (uint32_t)last_loop_duration_us);
 }
