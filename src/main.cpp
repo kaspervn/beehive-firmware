@@ -27,16 +27,18 @@ static int32_t pwm_sin(int32_t t, const float freq, const float ampl, const floa
 // ========== Arduino stuff
 void setup() {
     Serial.begin(9600);
-    hardware_init();
+    Serial.write("Start\r\n");
+    hardware_setup();
 
 }
 
-void loop()
-{
-    //Used for loop performance calculation
+void loop() {
+    // Used for loop performance calculation
     int64_t t_now_us = micros();
     int64_t last_loop_duration_us = t_now_us - g_loop_previous_loop_t;
     g_loop_previous_loop_t = t_now_us;
+
+    hardware_state_t hardware_state = hardware_loop();
 
     //Calculate the coil pwm output
     int32_t t_now = millis();
