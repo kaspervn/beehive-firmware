@@ -56,7 +56,7 @@ typedef struct {
 //  channel 0: output WO0 and WO4
 //  channel 1: output WO1 and WO5
 //  channel 2: output WO2 and WO6  (only available on TCC0)
-//  channel 4: output WO3 and WO7  (only available on TCC0)
+//  channel 3: output WO3 and WO7  (only available on TCC0)
 static std::vector<pwm_config_t> pwm_configurations = {
         {.TCC = TCC0, .channel = 0, .output = 0, .pin = PIN_PA04E_TCC0_WO0, .pin_mux = PINMUX_PA04E_TCC0_WO0}, // Coil A
         {.TCC = TCC0, .channel = 3, .output = 3, .pin = PIN_PA19F_TCC0_WO3, .pin_mux = PINMUX_PA19F_TCC0_WO3}, // Coil B
@@ -205,8 +205,8 @@ void hardware_setup()
     system_events_init();
     system_interrupt_enable_global();
 
-    // init_coil_phase_pins();
-    // init_output_pwm();
+    init_coil_phase_pins();
+    init_output_pwm();
     init_pwm_in();
 
 }

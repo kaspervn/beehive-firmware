@@ -3,8 +3,8 @@
 #include <cmath>
 
 // ========== Settings
-float g_test_coil_wave_freq = 0.25; // in Hz
-float g_test_coil_wave_amplitude = 1.0; // 0.0 - 1.0
+float g_test_coil_wave_freq = 1; // in Hz
+float g_test_coil_wave_amplitude = 0.8; // 0.0 - 1.0
 float g_test_coil_wave_phase_shift_1 = TWO_PI / 3.0f;
 float g_test_coil_wave_phase_shift_2 = 2.0f * TWO_PI / 3.0f;
 
@@ -40,6 +40,10 @@ void loop() {
 
     hardware_state_t hardware_state = hardware_loop();
 
+    int32_t duty0 = 1e9*hardware_state.coil_pwm_pulse_width[0]/hardware_state.coil_pwm_period[0];
+    int32_t duty1 = 1e9*hardware_state.coil_pwm_pulse_width[1]/hardware_state.coil_pwm_period[1];
+    int32_t duty2 = 1e9*hardware_state.coil_pwm_pulse_width[2]/hardware_state.coil_pwm_period[2];
+
     //Calculate the coil pwm output
     int32_t t_now = millis();
 
@@ -52,5 +56,5 @@ void loop() {
     hardware_set_coil_power(2, pwm2);
 
     //Prints the coil pwm outputs in percentage of max effort, and the loop duration time in microseconds
-    Serial.printf("%d, %d, %d, %lu\r\n", 100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, (uint32_t)last_loop_duration_us);
+    Serial.printf("%d, %d, %d, %d, %d, %d, %lu\r\n", 100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, duty0, duty1, duty2,(uint32_t)last_loop_duration_us);
 }
