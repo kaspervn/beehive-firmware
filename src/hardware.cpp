@@ -166,7 +166,7 @@ static void init_pwm_in()
     extint_chan_get_config_defaults(&config_extint_chan);
     config_extint_chan.gpio_pin           = PWM_IN_1_EXTINT_PIN;
     config_extint_chan.gpio_pin_mux       = PWM_IN_1_EXTINT_MUX;
-    config_extint_chan.gpio_pin_pull      = EXTINT_PULL_NONE;
+    config_extint_chan.gpio_pin_pull      = EXTINT_PULL_UP;
     config_extint_chan.detection_criteria = EXTINT_DETECT_HIGH;
     extint_chan_set_config(PWM_IN_1_EXTINT_NR, &config_extint_chan);
     config_extint_chan.gpio_pin           = PWM_IN_2_EXTINT_PIN;
