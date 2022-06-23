@@ -23,4 +23,15 @@ hardware_state_t hardware_loop();
 //val specifies the pwm duty cycle. Valid values are between 0 and PWM_OUT_MAX
 void hardware_set_coil_power(unsigned int n, int32_t val);
 
+float sense_max_current(int n);
+
+typedef struct {
+    int try_count;
+    int timeout_count;
+    int last_period;
+    int last_pulse_width;
+} try_read_pwm_in_res;
+
+try_read_pwm_in_res try_read_pwm_in(int n);
+
 #endif

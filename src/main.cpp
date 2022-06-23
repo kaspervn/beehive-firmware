@@ -122,6 +122,7 @@ void initialize()
 }
 
 // ========== Arduino stuff
+#ifndef HARDWARE_TESTER
 void setup() {
     delay(2000);
     Serial.begin(9600);
@@ -168,3 +169,51 @@ void loop() {
     //Prints the coil pwm outputs in percentage of max effort, the positions [um], the time [us] and the loop duration time [us]
     Serial.printf("%d, %d, %d, %d, %d, %d, %lu, %lu\r\n",  100*pwm0/PWM_OUT_MAX, 100*pwm1/PWM_OUT_MAX, 100*pwm2/PWM_OUT_MAX, disp0, disp1, disp2,(uint32_t)t_now_us,(uint32_t)last_loop_duration_us);
 }
+#else
+
+void setup() {
+    Serial.begin(9600);
+    hardware_setup();
+}
+
+void test_coil(int n)
+{
+    float current_sense_result = sense_max_current(n % 3);
+    bool ok = current_sense_result > 1.5f && current_sense_result < 2.5f;
+    Serial.printf("coil %s: %s    max current: %d mA\r\n",
+                  (n % 3 == 0) ? "A" : (n % 3 == 1 ? "B" : "C"),
+                  ok ? "OK " : "BAD",
+                  (int)(1000*current_sense_result));
+}
+
+void test_hall_readout(int n)
+{
+    try_read_pwm_in_res res = try_read_pwm_in(n);
+    bool ok = res.timeout_count == 0 &&
+              res.last_period > 23000 &&
+              res.last_period < 25000 &&
+              res.last_pulse_width > (int)(res.last_period * 0.1f) &&
+              res.last_pulse_width < (int)(res.last_period * 0.9f);
+    Serial.printf("hall %s: %s    %d timeouts out of %d tries. Last cycle: %d/%d\r\n",
+                  (n % 3 == 0) ? "A" : (n % 3 == 1 ? "B" : "C"),
+                  ok ? "OK " : "BAD",
+                  res.timeout_count, res.try_count, res.last_pulse_width, res.last_period);
+}
+
+void loop() {
+    for(int n = 0; n < 3; n++) {
+        test_coil(n);
+        delay(1000);
+    }
+
+    Serial.write("\r\n");
+
+    for(int n = 0; n < 3; n++) {
+        test_hall_readout(n);
+        delay(1000);
+    }
+
+    Serial.write("\r\n\r\n");
+}
+
+#endif

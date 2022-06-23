@@ -63,6 +63,10 @@ static std::vector<pwm_config_t> pwm_configurations = {
         {.TCC = TCC0, .channel = 1, .output = 1, .pin = PIN_PA09E_TCC0_WO1, .pin_mux = PINMUX_PA09E_TCC0_WO1}, // Coil C
         };
 
+static const unsigned long current_sense_pins[] = {PIN_A1, PIN_A0, PIN_A8};
+#define CURRENT_SENSE_ADC_GAIN 4
+#define CURRENT_SENSE_RESISTANCE 0.25f
+#define CURRENT_SENSE_VREF 3.2f
 
 #define GPIO_COIL_A_PHASE PIN_PA01
 #define GPIO_COIL_B_PHASE PIN_PA27
@@ -209,6 +213,32 @@ void hardware_setup()
     init_output_pwm();
     init_pwm_in();
 
+#if CURRENT_SENSE_ADC_GAIN == 1
+    ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;
+#elif CURRENT_SENSE_ADC_GAIN == 2
+    ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_2X_Val;
+#elif CURRENT_SENSE_ADC_GAIN == 4
+    ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_4X_Val;
+#elif CURRENT_SENSE_ADC_GAIN == 8
+    ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_8X_Val;
+#elif CURRENT_SENSE_ADC_GAIN == 16
+    ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_16X_Val;
+#else
+#error "Specified CURRENT_SENSE_ADC_GAIN invalid"
+#endif
+
+}
+
+static inline void tcc_1_2_switch_channel(int n) {
+    if(n == 1)
+    {
+        //switch to channel 1
+        EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    }
+    else if (n == 2)
+    {
+        EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_2.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    }
 }
 
 hardware_state_t hardware_loop()
@@ -227,7 +257,7 @@ hardware_state_t hardware_loop()
     hardware_state.coil_pwm_pulse_width[1] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
     //switch to channel 1
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_1.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    tcc_1_2_switch_channel(1);
 
     //flush the buffer to remove an invalid value from the previous cycle
     while(!(PWM_IN_1_2_TCC->INTFLAG.bit.MC1)) { }
@@ -240,7 +270,7 @@ hardware_state_t hardware_loop()
     hardware_state.coil_pwm_pulse_width[0] = tcc_get_capture_value(&tcc_modules[PWM_IN_1_2_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
     //switch to channel 2 for the next round
-    EVSYS->USER.reg = EVSYS_USER_CHANNEL(pwm_in_event_2.channel + 1) | EVSYS_USER_USER(EVSYS_ID_USER_TCC1_EV_1);
+    tcc_1_2_switch_channel(2);
 
     while(!(PWM_IN_3_TCC->INTFLAG.bit.MC1)) { }
     PWM_IN_3_TCC->INTFLAG.reg |= TCC_INTFLAG_MC1;
@@ -248,4 +278,62 @@ hardware_state_t hardware_loop()
     hardware_state.coil_pwm_pulse_width[2] = tcc_get_capture_value(&tcc_modules[PWM_IN_3_TCC_NR], TCC_MATCH_CAPTURE_CHANNEL_0);
 
     return hardware_state;
+}
+
+float sense_max_current(int n)
+{
+    tcc_set_compare_value(pwm_configurations[n].module,
+                          static_cast<const tcc_match_capture_channel>(pwm_configurations[n].channel), PWM_OUT_PERIOD);
+
+    delay(5);
+
+    uint32_t sense_raw = analogRead(current_sense_pins[n]);
+
+    delay(5);
+    tcc_set_compare_value(pwm_configurations[n].module,
+                          static_cast<const tcc_match_capture_channel>(pwm_configurations[n].channel), 0);
+
+    float current = ((sense_raw / 1024.0f) * (CURRENT_SENSE_VREF / CURRENT_SENSE_ADC_GAIN)) / CURRENT_SENSE_RESISTANCE;
+    return current;
+}
+
+try_read_pwm_in_res try_read_pwm_in(int n)
+{
+    const int no_readings = 10;
+    const int reading_timeout = 10; //ms
+
+    Tcc* hw_tcc = n < 2 ? PWM_IN_1_2_TCC : PWM_IN_3_TCC;
+    int tcc_nr = n < 2 ? PWM_IN_1_2_TCC_NR : PWM_IN_3_TCC_NR;
+
+    if(n == 0) {
+        tcc_1_2_switch_channel(1);
+    } else if(n == 1) {
+        tcc_1_2_switch_channel(2);
+    }
+
+    int timeout_count = 0;
+    int last_pwm_pulse_width = -1;
+    int last_pwm_period = -1;
+    for(int reading_n = 0; reading_n < no_readings; reading_n++)
+    {
+        unsigned long t_reading_start = millis();
+        bool timed_out = false;
+        while(!(hw_tcc->INTFLAG.bit.MC1)) {
+            if(millis() >= t_reading_start + reading_timeout)
+            {
+                timed_out = true;
+                break;
+            }
+        }
+
+        if(!timed_out) {
+            hw_tcc->INTFLAG.reg |= TCC_INTFLAG_MC1;
+             last_pwm_period = tcc_get_capture_value(&tcc_modules[tcc_nr], TCC_MATCH_CAPTURE_CHANNEL_1);
+             last_pwm_pulse_width = tcc_get_capture_value(&tcc_modules[tcc_nr], TCC_MATCH_CAPTURE_CHANNEL_0);
+        } else {
+            timeout_count++;
+        }
+    }
+
+    return {.try_count = no_readings, .timeout_count = timeout_count, .last_period = last_pwm_period, .last_pulse_width = last_pwm_pulse_width};
 }
