@@ -240,6 +240,18 @@ void hardware_setup()
     init_coil_sense();
 
     rgbled.begin();
+    
+    delay(250);
+    set_led_color(0, 0, 50);
+    delay(250);
+    set_led_color(50, 0, 50);
+    delay(250);
+    set_led_color(50, 50, 0);
+    delay(250);
+    set_led_color(0, 0, 0);
+    delay(250);
+    set_led_color(50, 0, 0);
+    delay(1000);
 }
 
 static inline void tcc_1_2_switch_channel(int n) {
