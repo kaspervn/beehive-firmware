@@ -182,10 +182,14 @@ void setup() {
     delay(250);
     set_led_color(0, 0, 50);
     delay(250);
+    set_led_color(50, 0, 50);
+    delay(250);
+    set_led_color(50, 50, 0);
+    delay(250);
     set_led_color(0, 0, 0);
 }
 
-void test_coil(int n)
+static bool test_coil(int n)
 {
     float current_sense_result = sense_max_current(n % 3);
     bool ok = current_sense_result > 1.5f && current_sense_result < 2.5f;
@@ -193,9 +197,10 @@ void test_coil(int n)
                   (n % 3 == 0) ? "A" : (n % 3 == 1 ? "B" : "C"),
                   ok ? "OK " : "BAD",
                   (int)(1000*current_sense_result));
+    return ok;
 }
 
-void test_hall_readout(int n)
+static bool test_hall_readout(int n)
 {
     try_read_pwm_in_res res = try_read_pwm_in(n);
     bool ok = res.timeout_count == 0 &&
@@ -207,22 +212,49 @@ void test_hall_readout(int n)
                   (n % 3 == 0) ? "A" : (n % 3 == 1 ? "B" : "C"),
                   ok ? "OK " : "BAD",
                   res.timeout_count, res.try_count, res.last_pulse_width, res.last_period);
+    return ok;
 }
 
+static bool coils_work = false;
+static bool hall_sensors_work = false;
+
 void loop() {
+
+    coils_work = true;
     for(int n = 0; n < 3; n++) {
-        test_coil(n);
+        if(!test_coil(n))
+        {
+            coils_work = false;
+        }
         delay(1000);
     }
-
     Serial.write("\r\n");
 
+    hall_sensors_work = true;
     for(int n = 0; n < 3; n++) {
-        test_hall_readout(n);
+        if(!test_hall_readout(n))
+        {
+            hall_sensors_work = false;
+        }
         delay(1000);
     }
-
     Serial.write("\r\n\r\n");
+
+    if(coils_work && hall_sensors_work)
+    {
+        set_led_color(0, 50, 0);
+    }
+    else if(coils_work && !hall_sensors_work)
+    {
+        set_led_color(50, 50, 0);
+    }
+    else if(!coils_work && hall_sensors_work)
+    {
+        set_led_color(50, 0, 50);
+    }
+    else {
+        set_led_color(50, 0, 0);
+    }
 }
 
 #endif
