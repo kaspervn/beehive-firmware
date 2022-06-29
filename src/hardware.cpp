@@ -9,7 +9,7 @@
 #include <extint.h>
 #include <system_interrupt.h>
 #include "events.h"
-
+#include <Adafruit_NeoPixel.h>
 
 #include "hardware.h"
 
@@ -72,6 +72,8 @@ static const unsigned long current_sense_pins[] = {PIN_A1, PIN_A0, PIN_A8};
 #define GPIO_COIL_B_PHASE PIN_PA27
 #define GPIO_COIL_C_PHASE PIN_PA08
 static uint8_t gpio_coil_phase_pins[3] = {1, 27, 8};
+
+Adafruit_NeoPixel rgbled(1, 10, NEO_GRB + NEO_KHZ800);
 
 static void init_output_pwm() {
 
@@ -203,16 +205,8 @@ static void init_pwm_in()
     events_attach_user(&pwm_in_event_3, PWM_IN_3_EVSYS_USR);
 }
 
-void hardware_setup()
+static void init_coil_sense()
 {
-    system_extint_init();
-    system_events_init();
-    system_interrupt_enable_global();
-
-    init_coil_phase_pins();
-    init_output_pwm();
-    init_pwm_in();
-
 #if CURRENT_SENSE_ADC_GAIN == 1
     ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_1X_Val;
 #elif CURRENT_SENSE_ADC_GAIN == 2
@@ -226,7 +220,26 @@ void hardware_setup()
 #else
 #error "Specified CURRENT_SENSE_ADC_GAIN invalid"
 #endif
+}
 
+void set_led_color(int r, int g, int b) {
+    rgbled.setPixelColor(0, rgbled.Color(r, g, b));
+    rgbled.show();
+}
+
+void hardware_setup()
+{
+    system_extint_init();
+    system_events_init();
+    system_interrupt_enable_global();
+
+    init_coil_phase_pins();
+    init_output_pwm();
+    init_pwm_in();
+
+    init_coil_sense();
+
+    rgbled.begin();
 }
 
 static inline void tcc_1_2_switch_channel(int n) {

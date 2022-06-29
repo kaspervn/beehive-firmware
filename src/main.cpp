@@ -174,6 +174,15 @@ void loop() {
 void setup() {
     Serial.begin(9600);
     hardware_setup();
+
+
+    set_led_color(50, 0, 0);
+    delay(250);
+    set_led_color(0, 50, 0);
+    delay(250);
+    set_led_color(0, 0, 50);
+    delay(250);
+    set_led_color(0, 0, 0);
 }
 
 void test_coil(int n)

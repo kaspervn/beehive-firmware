@@ -34,4 +34,6 @@ typedef struct {
 
 try_read_pwm_in_res try_read_pwm_in(int n);
 
+void set_led_color(int r, int g, int b);
+
 #endif
